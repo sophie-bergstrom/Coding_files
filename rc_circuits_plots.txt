@@ -1,0 +1,397 @@
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from scipy import odr
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
+
+data = np.loadtxt('python_data_rc_circuits.csv', delimiter=',', skiprows=1)
+
+frequency = data[:,0] #Hz
+input_hp = data[:,1]
+input_hp_err = data[:,2] #mV
+output_hp = data[:,3]
+output_hp_err = data[:,4]
+gain_hp = data[:,5]
+gain_hp_err = data[:,6]
+phase_hp = data[:, 7] # microseconds
+phase_hp_err = data[:, 8]
+
+input_lp = data[:,9]
+input_lp_err = data[:,10]
+output_lp = data[:,11]
+output_lp_err = data[:,12]
+gain_lp = data[:,13]
+gain_lp_err = data[:,14]
+phase_lp = data[:, 15] 
+phase_lp_err = data[:, 16]
+
+omega = 2*np.pi*frequency
+
+phase_hp_sec = phase_hp*1e-6
+phase_hp_sec_err = phase_hp_err*1e-6
+
+phase_hp_rad = omega*phase_hp_sec
+phase_hp_rad_err = omega*phase_hp_sec_err
+
+phase_lp_sec = phase_lp*1e-6
+phase_lp_sec_err = phase_lp_err*1e-6
+
+phase_lp_rad = omega*phase_lp_sec
+phase_lp_rad_err = omega*phase_lp_sec_err
+
+
+
+
+
+# Curve fitting for high pass
+
+def gainhp(omega, b):
+	return (1 + (b*omega)**-2)**(-0.5)
+
+# Unweighted fit, high pass gain
+
+def rms_ghp(gn, gn_fit):
+	return np.sqrt(np.sum((gn-gn_fit)**2))
+
+init_vals = [4.334e-5]
+
+popt, pcov = curve_fit(gainhp, omega, gain_hp, init_vals)
+print(f'The fit parameters for the high pass gain are: RC = {popt[0]}')
+error=np.sqrt(np.diag(pcov))
+print(f'The uncertainties in the fit parameters for the high pass gain are: RC = {error[0]}')
+unweighted_fit = gainhp(omega, *popt)
+unweighted_rms = rms_ghp(gain_hp, unweighted_fit)
+print(f'The rms error for the unweighted fit of the high pass gain is {unweighted_rms}')
+
+# Weighted fit, high pass gain
+
+def gainhp_2(beta, freq):
+	b = beta
+	return (1 + (b*omega)**-2)**(-0.5)
+quad_model = odr.Model(gainhp_2)
+data = odr.RealData(omega, gain_hp, sy=gain_hp_err)
+myodr = odr.ODR(data, quad_model, beta0=init_vals)
+out = myodr.run()
+popt2 = out.beta
+error2 = np.sqrt(np.diag(out.cov_beta))
+print(f'The fit parameters for the high pass gain are: RC = {popt2[0]}')
+print(f'The uncertainties in the fit parameters for the high pass gain are: RC = {error2[0]}')
+weighted_fit = gainhp_2(popt2, omega)
+weighted_rms = rms_ghp(gain_hp, weighted_fit)
+print(f'The rms error for the weighted fit of the high pass gain is {weighted_rms}')
+
+#Plotting unweighted and weighted fits of high pass gain
+
+xSize = 14
+ySize = 7
+fontSize = 22
+markerSize = 20
+markerColor = 'k'
+tickSize = 12
+capSize = 4
+elineWidth = 2
+
+fig6 = plt.figure(figsize=(xSize, ySize))
+ax6 = fig6.add_subplot(111)
+ax6.errorbar(omega, gain_hp, yerr=gain_hp_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth, label='Data')
+ax6.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+ax6.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax6.set_xlabel('Angular Frequency (rad/s)', fontsize=fontSize)
+ax6.set_ylabel('High Pass Gain', fontsize=fontSize)
+ax6.tick_params(axis="x", labelsize=tickSize)
+ax6.tick_params(axis="y", labelsize=tickSize)
+ax6.legend(loc='lower right', fontsize=fontSize)
+plt.xscale('log')
+plt.grid()
+fig6.savefig("./Highpass_gain_curve_fit.jpg", bbox_inches='tight')
+
+
+
+
+# Curve fitting for low pass
+
+#def gainlp(omega, b):
+#	return (1 + (b*omega)**2)**(-0.5)
+
+# Unweighted fit, low pass gain
+
+#def rms_glp(gn, gn_fit):
+#	return np.sqrt(np.sum((gn-gn_fit)**2))
+
+#init_vals2 = [4.334e-5]
+
+#popt3, pcov3 = curve_fit(gainlp, omega, gain_lp, init_vals2)
+#print(f'The fit parameters for the low pass gain are: RC = {popt3[0]}')
+#error3=np.sqrt(np.diag(pcov3))
+#print(f'The uncertainties in the fit parameters for the low pass gain are: RC = {error3[0]}')
+#unweighted_fit2 = gainlp(omega, *popt3)
+#unweighted_rms2 = rms_glp(gain_lp, unweighted_fit2)
+#print(f'The rms error for the unweighted fit of the low pass gain is {unweighted_rms2}')
+
+# Weighted fit, low pass gain
+
+#def gainlp_2(beta, freq):
+#	b = beta
+#	return (1 + (b*omega)**2)**(-0.5)
+#quad_model2 = odr.Model(gainlp_2)
+#data2 = odr.RealData(omega, gain_lp, sy=gain_lp_err)
+#myodr2 = odr.ODR(data2, quad_model2, beta0=init_vals2)
+#out2 = myodr2.run()
+#popt4 = out2.beta
+#error4 = np.sqrt(np.diag(out2.cov_beta))
+#print(f'The fit parameters for the low pass gain are: RC = {popt4[0]}')
+#print(f'The uncertainties in the fit parameters for the low pass gain are: RC = {error4[0]}')
+#weighted_fit2 = gainlp_2(popt4, omega)
+#weighted_rms2 = rms_glp(gain_hp, weighted_fit2)
+#print(f'The rms error for the weighted fit of the low pass gain is {weighted_rms2}')
+
+#Plotting unweighted and weighted fits of low pass gain
+
+#xSize = 14
+#ySize = 7
+#fontSize = 22
+#markerSize = 20
+#markerColor = 'k'
+#tickSize = 12
+#capSize = 4
+#elineWidth = 2
+
+#fig7 = plt.figure(figsize=(xSize, ySize))
+#ax7 = fig7.add_subplot(111)
+#ax7.errorbar(omega, gain_lp, yerr=gain_hp_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth, label='Data')
+#ax7.plot(omega, unweighted_fit2, color='b', linewidth=1, label='Unweighted fit')
+#ax7.plot(omega, weighted_fit2, color='r', linewidth=1, label='Weighted fit')
+#ax7.set_xlabel('Angular Frequency (rad/s)', fontsize=fontSize)
+#ax7.set_ylabel('Low Pass Gain', fontsize=fontSize)
+#ax7.tick_params(axis="x", labelsize=tickSize)
+#ax7.tick_params(axis="y", labelsize=tickSize)
+#ax7.legend(loc='upper right', fontsize=fontSize)
+#plt.xscale('log')
+#plt.grid()
+#fig7.savefig("./lowpass_gain_curve_fit.jpg", bbox_inches='tight')
+
+
+
+
+# Curve fitting for high pass phase
+
+#def phasehp(omega, b):
+#	return np.arctan(1/(omega*b))
+
+# Unweighted fit, high pass phase
+
+#def rms_php(ph, ph_fit):
+#	return np.sqrt(np.sum((ph-ph_fit)**2))
+
+#init_vals = [4.334e-5]
+
+#popt, pcov = curve_fit(phasehp, omega, phase_hp_rad, init_vals)
+#print(f'The fit parameters for the high pass phase are: RC = {popt[0]}')
+#error=np.sqrt(np.diag(pcov))
+#print(f'The uncertainties in the fit parameters for the high pass phase are: RC = {error[0]}')
+#unweighted_fit = phasehp(omega, *popt)
+#unweighted_rms = rms_php(phase_hp_rad, unweighted_fit)
+#print(f'The rms error for the unweighted fit of the high pass phase is {unweighted_rms}')
+
+# Weighted fit, high pass phase
+
+#def phasehp_2(beta, freq):
+#	b = beta
+#	return np.arctan(1/(omega*b))
+#quad_model = odr.Model(phasehp_2)
+#data = odr.RealData(omega, phase_hp_rad, sy=phase_hp_rad_err)
+#myodr = odr.ODR(data, quad_model, beta0=init_vals)
+#out = myodr.run()
+#popt2 = out.beta
+#error2 = np.sqrt(np.diag(out.cov_beta))
+#print(f'The fit parameters for the high pass phase are: RC = {popt2[0]}')
+#print(f'The uncertainties in the fit parameters for the high pass phase are: RC = {error2[0]}')
+#weighted_fit = phasehp_2(popt2, omega)
+#weighted_rms = rms_php(phase_hp_rad, weighted_fit)
+#print(f'The rms error for the weighted fit of the high pass phase is {weighted_rms}')
+
+#Plotting unweighted and weighted fits of high pass phase
+
+#xSize = 14
+#ySize = 7
+#fontSize = 22
+#markerSize = 20
+#markerColor = 'k'
+#tickSize = 12
+#capSize = 4
+#elineWidth = 2
+
+#fig6 = plt.figure(figsize=(xSize, ySize))
+#ax6 = fig6.add_subplot(111)
+#ax6.errorbar(omega, phase_hp_rad, yerr=phase_hp_rad_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth, label='Data')
+#ax6.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax6.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+#ax6.set_xlabel('Angular Frequency (rad/s)', fontsize=fontSize)
+#ax6.set_ylabel('High Pass Phase (rad)', fontsize=fontSize)
+#ax6.tick_params(axis="x", labelsize=tickSize)
+#ax6.tick_params(axis="y", labelsize=tickSize)
+#ax6.legend(loc='lower left', fontsize=fontSize)
+#plt.xscale('log')
+#plt.grid()
+#fig6.savefig("./Highpass_phase_curve_fit.jpg", bbox_inches='tight')
+
+
+
+
+
+# Curve fitting for low pass phase
+
+#def phaselp(omega, b):
+#	return np.arctan(-1*(omega*b))
+
+# Unweighted fit, low pass phase
+
+#def rms_plp(ph, ph_fit):
+#	return np.sqrt(np.sum((ph-ph_fit)**2))
+
+#init_vals = [4.334e-5]
+
+#popt, pcov = curve_fit(phaselp, omega, phase_lp_rad, init_vals)
+#print(f'The fit parameters for the low pass phase are: RC = {popt[0]}')
+#error=np.sqrt(np.diag(pcov))
+#print(f'The uncertainties in the fit parameters for the low pass phase are: RC = {error[0]}')
+#unweighted_fit = phaselp(omega, *popt)
+#unweighted_rms = rms_plp(phase_lp_rad, unweighted_fit)
+#print(f'The rms error for the unweighted fit of the low pass phase is {unweighted_rms}')
+
+# Weighted fit, high pass phase
+
+#def phaselp_2(beta, freq):
+#	b = beta
+#	return np.arctan(-1*(omega*b))
+#quad_model = odr.Model(phaselp_2)
+#data = odr.RealData(omega, phase_lp_rad, sy=phase_lp_rad_err)
+#myodr = odr.ODR(data, quad_model, beta0=init_vals)
+#out = myodr.run()
+#popt2 = out.beta
+#error2 = np.sqrt(np.diag(out.cov_beta))
+#print(f'The fit parameters for the low pass phase are: RC = {popt2[0]}')
+#print(f'The uncertainties in the fit parameters for the low pass phase are: RC = {error2[0]}')
+#weighted_fit = phaselp_2(popt2, omega)
+#weighted_rms = rms_plp(phase_lp_rad, weighted_fit)
+#print(f'The rms error for the weighted fit of the low pass phase is {weighted_rms}')
+
+#Plotting unweighted and weighted fits of high pass phase
+
+#xSize = 14
+#ySize = 7
+#fontSize = 22
+#markerSize = 20
+#markerColor = 'k'
+#tickSize = 12
+#capSize = 4
+#elineWidth = 2
+
+#fig6 = plt.figure(figsize=(xSize, ySize))
+#ax6 = fig6.add_subplot(111)
+#ax6.errorbar(omega, phase_lp_rad, yerr=phase_lp_rad_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth, label='Data')
+#ax6.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax6.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+#ax6.set_xlabel('Angular Frequency (rad/s)', fontsize=fontSize)
+#ax6.set_ylabel('Low Pass Phase (rad)', fontsize=fontSize)
+#ax6.tick_params(axis="x", labelsize=tickSize)
+#ax6.tick_params(axis="y", labelsize=tickSize)
+#ax6.legend(loc='upper left', fontsize=fontSize)
+#plt.xscale('log')
+#plt.grid()
+#fig6.savefig("./Lowpass_phase_curve_fit.jpg", bbox_inches='tight')
+
+
+
+
+
+# Size of figure in inches 
+# (This may show up differently in the Jupyter Notebook but will be respected when you save the figure.)
+xSize = 6
+ySize = 3
+# Fontsize of various text elements of the figure in pts
+fontSize = 14
+# Size of line of the graph
+markerSize = 20
+# Color of line: 'r'=red, 'k'=black, 'b'=blue, 'g'=green, etc
+markerColor = 'k'
+# Tick labels size
+tickSize = 12
+# Length of line at the end of the errorbars
+capSize=4
+# The linewidth of the errobars
+elineWidth=2
+
+# High Pass Gain
+
+fig2 = plt.figure(figsize=(xSize, ySize))
+# Create axes for a single figure
+ax2 = fig2.add_subplot(111)
+# Plot position as a function of time
+ax2.errorbar(frequency, gain_hp, yerr=gain_hp_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth)
+# Create axes labels
+ax2.set_xlabel('Frequency (Hz)', fontsize=fontSize)
+ax2.set_ylabel('High Pass Gain', fontsize=fontSize)
+# Change size of tick labels
+ax2.tick_params(axis="x", labelsize=tickSize)
+ax2.tick_params(axis="y", labelsize=tickSize)
+# Show grid
+plt.grid()
+# Uncomment (remove leading #) to save figure
+#fig2.savefig("./Highpass_gain_vs_frequency.jpg", bbox_inches='tight')
+
+# Low Pass Gain
+
+fig3 = plt.figure(figsize=(xSize, ySize))
+# Create axes for a single figure
+ax3 = fig3.add_subplot(111)
+# Plot position as a function of time
+ax3.errorbar(frequency, gain_lp, yerr=gain_lp_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth)
+# Create axes labels
+ax3.set_xlabel('Frequency (Hz)', fontsize=fontSize)
+ax3.set_ylabel('Low Pass Gain', fontsize=fontSize)
+# Change size of tick labels
+ax3.tick_params(axis="x", labelsize=tickSize)
+ax3.tick_params(axis="y", labelsize=tickSize)
+# Show grid
+plt.grid()
+# Uncomment (remove leading #) to save figure
+#fig3.savefig("./Lowpass_gain_vs_frequency.jpg", bbox_inches='tight')
+
+# High Pass Phase Shift
+
+fig4 = plt.figure(figsize=(xSize, ySize))
+# Create axes for a single figure
+ax4 = fig4.add_subplot(111)
+# Plot position as a function of time
+ax4.errorbar(frequency, phase_hp, yerr=phase_hp_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth)
+# Create axes labels
+ax4.set_xlabel('Frequency (Hz)', fontsize=fontSize)
+ax4.set_ylabel('High Pass Phase Shift', fontsize=fontSize)
+# Change size of tick labels
+ax4.tick_params(axis="x", labelsize=tickSize)
+ax4.tick_params(axis="y", labelsize=tickSize)
+# Show grid
+plt.grid()
+# Uncomment (remove leading #) to save figure
+#fig4.savefig("./highpass_phase_vs_frequency.jpg", bbox_inches='tight')
+
+# Low Pass Phase Shift
+
+fig5 = plt.figure(figsize=(xSize, ySize))
+# Create axes for a single figure
+ax5 = fig5.add_subplot(111)
+# Plot position as a function of time
+ax5.errorbar(frequency, phase_lp, yerr=phase_lp_err, color=markerColor, fmt='o', capsize=capSize, elinewidth=elineWidth)
+# Create axes labels
+ax5.set_xlabel('Frequency (Hz)', fontsize=fontSize)
+ax5.set_ylabel('Low Pass Phase Shift', fontsize=fontSize)
+# Change size of tick labels
+ax5.tick_params(axis="x", labelsize=tickSize)
+ax5.tick_params(axis="y", labelsize=tickSize)
+# Show grid
+plt.grid()
+# Uncomment (remove leading #) to save figure
+#fig5.savefig("./lowpass_phase_vs_frequency.jpg", bbox_inches='tight')

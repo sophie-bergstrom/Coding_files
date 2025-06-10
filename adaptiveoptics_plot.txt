@@ -1,0 +1,234 @@
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from scipy import odr
+import pandas as pd
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
+
+df = pd.read_csv("adaptiveopticsdata.csv")
+
+#data = np.loadtxt('adaptiveopticsdata.csv', delimiter=',', skiprows=1)
+
+nolens_b = df[df["Index"] == 0]
+nolens_a = df[df["Index"] == 10]
+
+nd1_b = df[df["Index"] == 1]
+nd1_a = df[df["Index"] == 11]
+
+nd2_b = df[df["Index"] == 2]
+nd2_a = df[df["Index"] == 12]
+
+planoconcave_b = df[df["Index"] == 3]
+planoconcave_a = df[df["Index"] == 13]
+
+planoconvex_b = df[df["Index"] == 4]
+planoconvex_a = df[df["Index"] == 14]
+
+biconcave_b = df[df["Index"] == 5]
+biconcave_a = df[df["Index"] == 15]
+
+biconvex_b = df[df["Index"] == 6]
+biconvex_a = df[df["Index"] == 16]
+
+nolens_b_pv = nolens_b["P-V"].values
+nolens_b_focal = nolens_b["Focal Length"].values
+nolens_b_mean = nolens_b["Mean"].values
+nolens_b_rms = nolens_b["RMS"].values
+nolens_a_pv = nolens_a["P-V"].values
+nolens_a_mean = nolens_b["Mean"].values
+nolens_a_rms = nolens_b["RMS"].values
+
+nd1_b_pv = nd1_b["P-V"].values
+nd1_b_focal = nd1_b["Focal Length"].values
+nd1_b_mean = nd1_b["Mean"].values
+nd1_b_rms = nd1_b["RMS"].values
+nd1_a_pv = nd1_a["P-V"].values
+nd1_a_focal = nd1_b["Focal Length"].values
+nd1_a_mean = nd1_b["Mean"].values
+nd1_a_rms = nd1_b["RMS"].values
+
+nd2_b_pv = nd2_b["P-V"].values
+nd2_b_focal = nd2_b["Focal Length"].values
+nd2_b_mean = nd2_b["Mean"].values
+nd2_b_rms = nd2_b["RMS"].values
+nd2_a_pv = nd2_a["P-V"].values
+nd2_a_focal = nd2_b["Focal Length"].values
+nd2_a_mean = nd2_b["Mean"].values
+nd2_a_rms = nd2_b["RMS"].values
+
+planoconcave_b_pv = planoconcave_b["P-V"].values
+planoconcave_b_focal = planoconcave_b["Focal Length"].values
+planoconcave_b_mean = planoconcave_b["Mean"].values
+planoconcave_b_rms = planoconcave_b["RMS"].values
+planoconcave_a_pv = planoconcave_a["P-V"].values
+planoconcave_a_focal = planoconcave_a["Focal Length"].values
+planoconcave_a_mean = planoconcave_a["Mean"].values
+planoconcave_a_rms = planoconcave_a["RMS"].values
+
+planoconvex_b_pv = planoconvex_b["P-V"].values
+planoconvex_b_focal = planoconvex_b["Focal Length"].values
+planoconvex_b_mean = planoconvex_b["Mean"].values
+planoconvex_b_rms = planoconvex_b["RMS"].values
+planoconvex_a_pv = planoconvex_a["P-V"].values
+planoconvex_a_focal = planoconvex_a["Focal Length"].values
+planoconvex_a_mean = planoconvex_a["Mean"].values
+planoconvex_a_rms = planoconvex_a["RMS"].values
+
+biconcave_b_pv = biconcave_b["P-V"].values
+biconcave_b_focal = biconcave_b["Focal Length"].values
+biconcave_b_mean = biconcave_b["Mean"].values
+biconcave_b_rms = biconcave_b["RMS"].values
+biconcave_a_pv = biconcave_a["P-V"].values
+biconcave_a_focal = biconcave_a["Focal Length"].values
+biconcave_a_mean = biconcave_a["Mean"].values
+biconcave_a_rms = biconcave_a["RMS"].values
+
+biconvex_b_pv = biconvex_b["P-V"].values
+biconvex_b_focal = biconvex_b["Focal Length"].values
+biconvex_b_mean = biconvex_b["Mean"].values
+biconvex_b_rms = biconvex_b["RMS"].values
+biconvex_a_pv = biconvex_a["P-V"].values
+biconvex_a_focal = biconvex_a["Focal Length"].values
+biconvex_a_mean = biconvex_a["Mean"].values
+biconvex_a_rms = biconvex_a["RMS"].values
+
+xSize = 10
+ySize = 5
+fontSize = 22
+markerSize = 20
+markerColor = 'k'
+tickSize = 12
+capSize = 4
+elineWidth = 2
+
+fig = plt.figure(figsize=(xSize, ySize))
+ax = fig.add_subplot(111)
+ax.plot(biconvex_b_focal, biconvex_b_pv, marker='o', color=markerColor, linewidth=1, label='Biconvex Before')
+ax.plot(biconvex_a_focal, biconvex_a_pv, marker='o', color='blue', linewidth=1, label='Biconvex After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax.set_ylabel('P-V', fontsize=fontSize)
+ax.set_title("Biconvex P-V vs Focal Length", fontsize=fontSize)
+ax.tick_params(axis="x", labelsize=tickSize)
+ax.tick_params(axis="y", labelsize=tickSize)
+ax.legend(loc='upper right', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig.savefig("./biconvex_pv.jpg", bbox_inches='tight')
+
+fig2 = plt.figure(figsize=(xSize, ySize))
+ax2 = fig2.add_subplot(111)
+ax2.plot(biconcave_b_focal, biconcave_b_pv, marker='o', color=markerColor, linewidth=1, label='Biconcave Before')
+ax2.plot(biconcave_a_focal, biconcave_a_pv, marker='o', color='blue', linewidth=1, label='Biconcave After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax2.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax2.set_ylabel('P-V', fontsize=fontSize)
+ax2.set_title("Biconcave P-V vs Focal Length", fontsize=fontSize)
+ax2.tick_params(axis="x", labelsize=tickSize)
+ax2.tick_params(axis="y", labelsize=tickSize)
+ax2.legend(loc='upper left', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig2.savefig("./biconcave_pv.jpg", bbox_inches='tight')
+
+fig3 = plt.figure(figsize=(xSize, ySize))
+ax3 = fig3.add_subplot(111)
+ax3.plot(planoconvex_b_focal, planoconvex_b_pv, marker='o', color='purple', linewidth=1, label='Planoconvex Before')
+ax3.plot(planoconvex_a_focal, planoconvex_a_pv, marker='o', color='orange', linewidth=1, label='Planoconvex After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax3.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax3.set_ylabel('P-V', fontsize=fontSize)
+ax3.set_title("Planoconvex P-V vs Focal Length", fontsize=fontSize)
+ax3.tick_params(axis="x", labelsize=tickSize)
+ax3.tick_params(axis="y", labelsize=tickSize)
+ax3.legend(loc='upper right', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig3.savefig("./planoconvex_pv.jpg", bbox_inches='tight')
+
+fig4 = plt.figure(figsize=(xSize, ySize))
+ax4 = fig4.add_subplot(111)
+ax4.plot(planoconcave_b_focal, planoconcave_b_pv, marker='o', color='pink', linewidth=1, label='Planoconcave Before')
+ax4.plot(planoconcave_a_focal, planoconcave_a_pv, marker='o', color='teal', linewidth=1, label='Planoconcave After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax4.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax4.set_ylabel('P-V', fontsize=fontSize)
+ax4.set_title("Planoconcave P-V vs Focal Length", fontsize=fontSize)
+ax4.tick_params(axis="x", labelsize=tickSize)
+ax4.tick_params(axis="y", labelsize=tickSize)
+ax4.legend(loc='upper left', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig4.savefig("./planoconcave_pv.jpg", bbox_inches='tight')
+
+fig5 = plt.figure(figsize=(xSize, ySize))
+ax5 = fig5.add_subplot(111)
+ax5.plot(biconvex_b_focal, biconvex_b_rms, marker='o', color=markerColor, linewidth=1, label='Biconvex Before')
+ax5.plot(biconvex_a_focal, biconvex_a_rms, marker='o', color='blue', linewidth=1, label='Biconvex After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax5.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax5.set_ylabel('RMS', fontsize=fontSize)
+ax5.set_title("Biconvex RMS vs Focal Length", fontsize=fontSize)
+ax5.tick_params(axis="x", labelsize=tickSize)
+ax5.tick_params(axis="y", labelsize=tickSize)
+ax5.legend(loc='upper right', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig5.savefig("./biconvex_rms.jpg", bbox_inches='tight')
+
+fig6 = plt.figure(figsize=(xSize, ySize))
+ax6 = fig6.add_subplot(111)
+ax6.plot(biconcave_b_focal, biconcave_b_rms, marker='o', color=markerColor, linewidth=1, label='Biconcave Before')
+ax6.plot(biconcave_a_focal, biconcave_a_rms, marker='o', color='blue', linewidth=1, label='Biconcave After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax6.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax6.set_ylabel('RMS', fontsize=fontSize)
+ax6.set_title("Biconcave RMS vs Focal Length", fontsize=fontSize)
+ax6.tick_params(axis="x", labelsize=tickSize)
+ax6.tick_params(axis="y", labelsize=tickSize)
+ax6.legend(loc='upper left', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig6.savefig("./biconcave_rms.jpg", bbox_inches='tight')
+
+fig7 = plt.figure(figsize=(xSize, ySize))
+ax7 = fig7.add_subplot(111)
+ax7.plot(planoconvex_b_focal, planoconvex_b_rms, marker='o', color='purple', linewidth=1, label='Planoconvex Before')
+ax7.plot(planoconvex_a_focal, planoconvex_a_rms, marker='o', color='orange', linewidth=1, label='Planoconvex After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax7.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax7.set_ylabel('RMS', fontsize=fontSize)
+ax7.set_title("Planoconvex RMS vs Focal Length", fontsize=fontSize)
+ax7.tick_params(axis="x", labelsize=tickSize)
+ax7.tick_params(axis="y", labelsize=tickSize)
+ax7.legend(loc='upper right', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig7.savefig("./planoconvex_rms.jpg", bbox_inches='tight')
+
+fig8 = plt.figure(figsize=(xSize, ySize))
+ax8 = fig8.add_subplot(111)
+ax8.plot(planoconcave_b_focal, planoconcave_b_rms, marker='o', color='pink', linewidth=1, label='Planoconcave Before')
+ax8.plot(planoconcave_a_focal, planoconcave_a_rms, marker='o', color='teal', linewidth=1, label='Planoconcave After')
+#ax.plot(omega, unweighted_fit, color='b', linewidth=1, label='Unweighted fit')
+#ax.plot(omega, weighted_fit, color='r', linewidth=1, label='Weighted fit')
+ax8.set_xlabel('Focal Length (mm)', fontsize=fontSize)
+ax8.set_ylabel('RMS', fontsize=fontSize)
+ax8.set_title("Planoconcave RMS vs Focal Length", fontsize=fontSize)
+ax8.tick_params(axis="x", labelsize=tickSize)
+ax8.tick_params(axis="y", labelsize=tickSize)
+ax8.legend(loc='upper left', fontsize=fontSize)
+plt.grid()
+plt.show()
+fig8.savefig("./planoconcave_rms.jpg", bbox_inches='tight')
+
+

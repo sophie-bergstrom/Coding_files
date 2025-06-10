@@ -1,0 +1,89 @@
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from scipy import odr
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
+
+distance = np.array([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]) #meters
+distance_err = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01])
+
+voltage = np.array([7.03, 6.51, 5.90, 5.21, 4.38, 3.63, 3.17, 2.75, 2.35, 1.93])
+voltage_err = np.array([0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
+
+flux = 100/(4*np.pi*distance**2)
+flux_err = (((-15.91549431/distance**3)*distance_err)**2)**0.5
+
+def func(flux, A, B, C, D):
+	return A*np.log(B*flux + C) + D
+
+def rms(x, x_fit):
+	return np.sqrt(np.sum((x-x_fit)**2))
+
+init_vals = [1, 1, 1, 1]
+
+popt, pcov = curve_fit(func, flux, voltage, init_vals)
+print(f'The fit parameters for this function are: A = {popt[0]} and B = {popt[1]} and C = {popt[2]} and D = {popt[3]}')
+error = np.sqrt(np.diag(pcov))
+print(f'The uncertainties in the fit parameters are: A = {error[0]} and B = {error[1]} and C = {error[2]} and D = {error[3]}')
+unweighted_fit = func(flux, *popt)
+unweighted_rms = rms(voltage, unweighted_fit)
+print(f'The rms error for the unweighted fit is {unweighted_rms}')
+
+def func2(beta, flux):
+	A, B, C, D = beta
+	return A*np.log(B*flux + C) + D
+
+quad_model = odr.Model(func2)
+data = odr.RealData(flux, voltage, sx = flux_err, sy = voltage_err)
+myodr = odr.ODR(data, quad_model, beta0=init_vals)
+out = myodr.run()
+popt2 = out.beta
+error2 = np.sqrt(np.diag(out.cov_beta))
+print(f'The fit parameters are: A = {popt2[0]}, B = {popt2[1]}, and C = {popt2[2]} and D = {popt2[3]}')
+print(f'The uncertainties in the fit parameters are: A = {error2[0]}, B = {error2[1]}, and C = {error2[2]} and D = {error2[3]}')
+weighted_fit = func2(popt2, flux)
+weighted_rms = rms(voltage, weighted_fit)
+print(f'The rms error for the weighted fit is {weighted_rms}')
+
+xSize = 14
+ySize = 7
+fontSize = 22
+markerSize = 20
+markerColor = 'k'
+tickSize = 12
+capSize=4
+elineWidth=2
+
+fig= plt.figure(figsize=(xSize, ySize))
+ax = fig.add_subplot(111)
+ax.errorbar(flux, voltage, xerr=flux_err, yerr=voltage_err, color=markerColor, fmt='o', capsize=capSize, 
+             elinewidth=elineWidth)
+ax.plot(flux, unweighted_fit, color='b', linewidth=1, label='Unweighted')
+ax.plot(flux, weighted_fit, color='r', linewidth=1, label='Weighted')
+ax.set_xlabel('Flux (W/m^2)', fontsize=fontSize)
+ax.set_ylabel('Voltage (V)', fontsize=fontSize)
+ax.set_title('Solar Cell Calibration Plot', fontsize=fontSize)
+ax.legend(loc='upper left', fontsize=fontSize)
+plt.xscale('log')
+#fig.savefig("./solarcellcalibrationplot_experimental.jpg", bbox_inches='tight')
+#ax.set_ylim([0, 7])
+plt.grid()
+plt.show()
+
+fig= plt.figure(figsize=(xSize, ySize))
+ax = fig.add_subplot(111)
+ax.errorbar(flux, voltage, xerr=flux_err, yerr=voltage_err, color=markerColor, fmt='o', capsize=capSize, 
+             elinewidth=elineWidth)
+#ax.plot(flux, unweighted_fit, color='b', linewidth=1, label='Unweighted')
+#ax.plot(flux, weighted_fit, color='r', linewidth=1, label='Weighted')
+ax.set_xlabel('ln(Flux) (W/m^2)', fontsize=fontSize)
+ax.set_ylabel('Voltage (V)', fontsize=fontSize)
+ax.set_title('Solar Cell Calibration Plot', fontsize=fontSize)
+#ax.legend(loc='upper left', fontsize=fontSize)
+plt.xscale('log')
+fig.savefig("./solarcellcalibrationplot_data.jpg", bbox_inches='tight')
+#ax.set_ylim([0, 7])
+plt.grid(True)
+plt.show()
